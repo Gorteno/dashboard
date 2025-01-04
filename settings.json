@@ -1,0 +1,1 @@
+{"autoroles_enabled": false, "welcome_enabled": false, "notifications_level_enabled": false, "track_time_enabled": false, "verify_enabled": false, "role_ids": [], "welcome_channel": null, "notifications_channel_id": null, "verify_role_id": null, "level_roles": {}, "level_factor": 400, "xp_per_minute": 4, "xp_per_message": 5, "dropdowns": {"Age": [], "Gender": [], "Notify": []}}

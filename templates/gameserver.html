@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="server-overview">
+    <h2>Allgemeine Serverleistung</h2>
+    <div class="stat">
+        <span>CPU:</span>
+        <div class="progress">
+            <div class="progress-bar" id="cpu-overview"></div>
+        </div>
+    </div>
+    <div class="stat">
+        <span>RAM:</span>
+        <div class="progress">
+            <div class="progress-bar" id="ram-overview"></div>
+        </div>
+    </div>
+    <div class="stat">
+        <span>Speicherplatz:</span>
+        <div class="progress">
+            <div class="progress-bar" id="disk-overview"></div>
+        </div>
+    </div>
+</div>
+<div id="toast-container"></div>
+<div class="gameservers-container">
+    {% for server, data in gameservers.items() %}
+    <div class="gameserver">
+        <div class="gameserver-header">
+            <h2>{{ server }}</h2>
+            <span class="status" id="status-{{ server }}">
+                Gestoppt
+            </span>
+        </div>
+        <div class="gameserver-controls">
+            <button onclick="startService('{{ server }}')">Starten</button>
+            <button class="stop" onclick="stopService('{{ server }}')">Stoppen</button>
+            <!--<button class="config" onclick="window.location.href='/config/{{ server }}'">Config</button>-->
+        </div>
+        <div class="server-stats">
+            <h3>Serverauslastung:</h3>
+            <div class="stat">
+                <span>CPU:</span>
+                <div class="progress">
+                    <div class="progress-bar" id="cpu-{{ server }}"></div>
+                </div>
+            </div>
+            <div class="stat">
+                <span>RAM:</span>
+                <div class="progress">
+                    <div class="progress-bar" id="ram-{{ server }}"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    // Aktualisiere allgemeine Serverleistung
+    async function updateServerOverview() {
+        try {
+            const response = await fetch('/api/server/stats');
+            const stats = await response.json();
+
+            document.getElementById('cpu-overview').style.width = `${stats.cpu}%`;
+            document.getElementById('ram-overview').style.width = `${stats.ram}%`;
+            document.getElementById('disk-overview').style.width = `${stats.disk}%`;
+        } catch (error) {
+            console.error("Fehler beim Abrufen der allgemeinen Serverleistung:", error);
+        }
+    }
+
+    // Aktualisiere die Statusanzeige für alle Gameserver
+    async function updateServerStatus(server) {
+        try {
+            const response = await fetch(`/status/${server}`);
+            const data = await response.json();
+
+            // Aktualisiere den Status
+            document.getElementById(`status-${server}`).textContent = data.status === "läuft" ? "Läuft" : "Gestoppt";
+            document.getElementById(`status-${server}`).className = `status ${data.status === "läuft" ? "running" : "stopped"}`;
+
+            // Aktualisiere die CPU- und RAM-Auslastung
+            document.getElementById(`cpu-${server}`).style.width = `${data.cpu || 0}%`;
+            document.getElementById(`ram-${server}`).style.width = `${data.memory || 0}%`;
+        } catch (error) {
+            console.error(`Fehler beim Abrufen des Status für ${server}:`, error);
+        }
+    }
+
+    // Initialisiere die Serverstatus-Aktualisierung
+    async function updateAllServers() {
+        {% for server in gameservers.keys() %}
+        updateServerStatus("{{ server }}");
+        {% endfor %}
+    }
+
+    // Toast-Benachrichtigung
+    function showToast(message, isError = false) {
+        const toastContainer = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.style.background = isError ? '#f44336' : 'rgba(0, 0, 0, 0.8)';
+        toast.textContent = message;
+
+        toastContainer.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Service starten
+    async function startService(service) {
+        try {
+            const response = await fetch(`/start/${service}`);
+            const result = await response.json();
+
+            if (result.status) {
+                showToast(result.status);
+                updateServerStatus(service); // Aktualisiere den Status
+            } else if (result.error) {
+                showToast(result.error, true);
+            }
+        } catch (error) {
+            showToast("Fehler beim Starten des Services", true);
+        }
+    }
+
+    // Service stoppen
+    async function stopService(service) {
+        try {
+            const response = await fetch(`/stop/${service}`);
+            const result = await response.json();
+
+            if (result.status) {
+                showToast(result.status);
+                updateServerStatus(service); // Aktualisiere den Status
+            } else if (result.error) {
+                showToast(result.error, true);
+            }
+        } catch (error) {
+            showToast("Fehler beim Stoppen des Services", true);
+        }
+    }
+
+    // Initialisiere wiederholte Aktualisierungen
+    setInterval(() => {
+        updateServerOverview();
+        updateAllServers();
+    }, 5000);
+
+    // Starte Initialisierung
+    updateServerOverview();
+    updateAllServers();
+</script>
+
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="server-container">
+    <h2>{{ name }}</h2>
+    <button onclick="window.location.href='/start/{{ name }}'">Starten</button>
+    <button onclick="window.location.href='/stop/{{ name }}'">Stoppen</button>
+    <div class="usage">
+        <p>CPU-Auslastung: {{ usage.cpu }}%</p>
+        <p>RAM-Auslastung: {{ usage.memory }}%</p>
+    </div>
+    <pre class="output">
+        {% for line in server.output.queue %}
+        {{ line }}
+        {% endfor %}
+    </pre>
+    <a href="/edit/{{ name }}">Konfigurationsdatei bearbeiten</a>
+</div>
+<script>
+    setInterval(() => {
+        location.reload();
+    }, 5000);  // Aktualisiere die Seite alle 5 Sekunden
+</script>
+{% endblock %}

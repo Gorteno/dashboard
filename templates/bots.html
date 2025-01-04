@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="toast-container"></div>
+<div class="bots-container">
+    {% for bot, data in bots.items() %}
+    <div class="bot">
+        <div class="bot-header">
+            <h2>{{ bot }}</h2>
+            <span class="status {{ 'running' if data.process else 'stopped' }}">
+                {{ 'Läuft' if data.process else 'Gestoppt' }}
+            </span>
+        </div>
+		<div class="bot-controls">
+			<button onclick="startService('{{ bot }}')">Starten</button>
+			<button class="stop" onclick="stopService('{{ bot }}')">Stoppen</button>
+		</div>
+		<div class="output">
+			{% for line in data.output.queue %}<div class="log-line">{{ line }}</div>{% endfor %}
+		</div>
+    </div>
+    {% endfor %}
+</div>
+<script>
+    // Automatisches Scrollen nach unten
+    document.querySelectorAll('.output').forEach(output => {
+        output.scrollTop = output.scrollHeight;
+    });
+
+    // Automatisches Aktualisieren der Seite
+    setInterval(() => {
+        location.reload();
+    }, 5000);  // Aktualisiere die Seite alle 5 Sekunden
+</script>
+<script>
+    // Funktion: Toast-Benachrichtigung anzeigen
+    function showToast(message, isError = false) {
+        const toastContainer = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.style.background = isError ? '#f44336' : 'rgba(0, 0, 0, 0.8)';
+        toast.textContent = message;
+
+        toastContainer.appendChild(toast);
+
+        // Entferne die Benachrichtigung nach 3 Sekunden
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
+    // Funktion: Service starten
+    async function startService(service) {
+        try {
+            const response = await fetch(`/start/${service}`);
+            const result = await response.json();
+
+            if (result.status) {
+                showToast(result.status); // Erfolgreiche Nachricht
+            } else if (result.error) {
+                showToast(result.error, true); // Fehlermeldung
+            }
+        } catch (error) {
+            showToast("Ein Fehler ist aufgetreten", true);
+        }
+    }
+
+    // Funktion: Service stoppen
+    async function stopService(service) {
+        try {
+            const response = await fetch(`/stop/${service}`);
+            const result = await response.json();
+
+            if (result.status) {
+                showToast(result.status); // Erfolgreiche Nachricht
+            } else if (result.error) {
+                showToast(result.error, true); // Fehlermeldung
+            }
+        } catch (error) {
+            showToast("Ein Fehler ist aufgetreten", true);
+        }
+    }
+</script>
+
+{% endblock %}
